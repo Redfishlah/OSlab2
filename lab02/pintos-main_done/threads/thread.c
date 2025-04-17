@@ -317,7 +317,7 @@ thread_exit (void)
   intr_disable ();
 
   /*Print the thread information when we exit  */
-  printf ("%s: exit(%d)\n",thread_name(), thread_current()->status_exit);
+  //printf ("%s: exit(%d)\n",thread_name(), thread_current()->status_exit);
 
   /*After process_wait sema up and return resource to parent thread*/
   thread_current ()->thread_child->store_exit = thread_current()->status_exit;
@@ -552,13 +552,20 @@ alloc_frame (struct thread *t, size_t size)
    empty.  (If the running thread can continue running, then it
    will be in the run queue.)  If the run queue is empty, return
    idle_thread. */
+bool thread_priority_cmp (const struct list_elem *a,const struct list_elem *b,void *aux UNUSED){
+     return list_entry(a,struct thread,elem)->priority < list_entry(b,struct thread,elem)->priority;
+   }
+
 static struct thread *
 next_thread_to_run (void) 
 {
   if (list_empty (&ready_list))
     return idle_thread;
-  else
-    return list_entry (list_pop_front (&ready_list), struct thread, elem);
+    else {
+      struct list_elem *max_priority = list_max (&ready_list, thread_priority_cmp, NULL);
+      list_remove (max_priority);
+      return list_entry (max_priority, struct thread, elem);
+    }
 }
 
 /* Completes a thread switch by activating the new thread's page

@@ -59,6 +59,8 @@ static long long user_ticks;    /* # of timer ticks in user programs. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
 static unsigned thread_ticks;   /* # of timer ticks since last yield. */
 
+#define DONATION_MAX_DEPTH 8
+
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
@@ -75,6 +77,44 @@ static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
+
+
+/* Checks if the current thread should yield the CPU to a higher priority thread. */
+void 
+priority_check(void) {
+  enum intr_level old_level = intr_disable();
+  if (!list_empty(&ready_list)) {
+    struct thread *t = list_entry(list_front(&ready_list), struct thread, elem);
+    if (thread_current()->priority < t->priority)
+      thread_yield();
+  }
+  intr_set_level(old_level);
+}
+
+bool priority_compare(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED) {
+    return list_entry(a, struct thread, elem)->priority > list_entry(b, struct thread, elem)->priority;
+}
+
+/*Priority of donation*/
+void 
+donate_priority (void)
+{
+  struct thread *t = thread_current ();
+  struct lock *l = t->wait_on_lock;
+  int i = 0;
+  for (; l != NULL && i != DONATION_MAX_DEPTH ; i++)
+  {
+    
+    if (l->holder == NULL) return;
+    if (l->holder->priority < t->priority) {
+      l->holder->priority = t->priority;
+      t = l->holder;
+      l = t->wait_on_lock;
+    } else {
+      return;
+    }
+  }
+}
 
 void create_lock ()
 {
@@ -107,7 +147,6 @@ thread_init (void)
   list_init (&ready_list);
   list_init (&all_list);
 
-  lock_init (&lock_f);
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
@@ -203,8 +242,7 @@ thread_create (const char *name, int priority,
   t->thread_child->tid = tid;
   sema_init (&t->thread_child->sema, 0);
   list_push_back (&thread_current()->childs, &t->thread_child->child_element);
-  /* Initialize the  exit status by the MAX
-      Fix Bug */
+  /* Initialize the  exit status by the MAX*/
   t->thread_child->store_exit = UINT32_MAX;
   t->thread_child->isrun = false;
 
@@ -225,6 +263,10 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
+
+  enum intr_level old_level = intr_disable ();
+  priority_check ();
+  intr_set_level (old_level);
 
   return tid;
 }
@@ -262,7 +304,7 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  list_insert_ordered (&ready_list, &t->elem,(list_less_func *) &priority_compare, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -324,7 +366,7 @@ thread_exit (void)
   sema_up (&thread_current()->thread_child->sema);
 
   /*Close owned files*/
-  file_close (thread_current ()->file_owned);
+  //file_close (thread_current ()->file_owned);
 
   /*Close all the files*/
   struct list_elem *e;
@@ -334,7 +376,7 @@ thread_exit (void)
     e = list_pop_front (files);
     struct thread_file *f = list_entry (e, struct thread_file, file_element);
     create_lock ();
-    file_close (f->file);
+    //file_close (f->file);
     end_lock ();
     list_remove (e);
     /*Free the resource the file obtain*/
@@ -383,17 +425,41 @@ thread_foreach (thread_action_func *func, void *aux)
 }
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
-void
-thread_set_priority (int new_priority) 
-{
-  thread_current ()->priority = new_priority;
+void thread_set_priority(int new_pri) {
+  struct thread *cur = thread_current();
+
+  if (new_pri == cur->priority) return;
+
+  enum intr_level old_lvl = intr_disable();
+  int old_pri = cur->priority;
+
+  cur->original_priority = new_pri;
+  cur->priority = new_pri;
+
+  // 如果曾經被 donate，維持最高的 priority
+  if (!list_empty(&cur->donors_list)) {
+    struct thread *top_donor = list_entry(list_front(&cur->donors_list),
+                                          struct thread, donors_elem);
+    if (cur->priority < top_donor->priority)
+      cur->priority = top_donor->priority;
+  }
+
+  // 若 priority 下降，主動讓出 CPU
+  if (new_pri < old_pri)
+    priority_check();
+  else
+    donate_priority();
+
+  intr_set_level(old_lvl);
 }
 
 /* Returns the current thread's priority. */
-int
-thread_get_priority (void) 
-{
-  return thread_current ()->priority;
+int 
+thread_get_priority(void) {
+  enum intr_level old_lvl = intr_disable();
+  int pri = thread_current()->priority;
+  intr_set_level(old_lvl);
+  return pri;
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -517,7 +583,6 @@ init_thread (struct thread *t, const char *name, int priority)
 
   /*OS Lab 01*/
   /*File system*/
-  t->magic = THREAD_MAGIC;
   t->file_fd=2;
   /* Initialization for parent child lists */
   if (t==initial_thread) t->parent=NULL;
@@ -531,6 +596,12 @@ init_thread (struct thread *t, const char *name, int priority)
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
+
+  /* Initialize Utilities for priority donation. */ 
+  t->original_priority = priority;
+  t->wait_on_lock = NULL;
+  list_init (&t->donors_list);
+
   intr_set_level (old_level);
 }
 

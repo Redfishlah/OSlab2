@@ -134,6 +134,14 @@ struct thread
 
     /*Lab02: Time for thread to wake up*/
     int64_t wake_up_tick;
+
+    /* Lab02: Priority test */
+    struct lock *wait_on_lock;             // 正在等待的 lock
+    struct list locks;                 // 儲存所有捐贈給它的 thread
+    struct list donors_list;
+    struct list_elem donors_elem;
+    int original_priority;
+
   };
 
 /* If false (default), use round-robin scheduler.
@@ -173,4 +181,12 @@ void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
+/*Lab02:Priority Test*/
+
+/* Let the running thread donate its priority if necessary. */
+void donate_priority (void);
+
+void priority_check (void);
+bool priority_compare(const struct list_elem *a, const struct list_elem *b, void *aux);
+bool thread_priority_cmp(const struct list_elem *a, const struct list_elem *b, void *aux);
 #endif /* threads/thread.h */

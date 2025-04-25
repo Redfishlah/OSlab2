@@ -8,7 +8,7 @@ services:
     stdin_open: true  
     tty: true         
     restart: no       
-    volumes:
-    #  - /home/sam/OSWF/lab02/lab02/pintos-main_done:/home/pintos
+    #volumes:
+    # - [your_source_code_path]:/home/pintos
     environment:
       - PINTOS_DIR=/home/pintos

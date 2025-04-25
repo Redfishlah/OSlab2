@@ -9,6 +9,6 @@ services:
     tty: true         
     restart: no       
     volumes:
-     - /Users/jeswww/Documents/Operating System/OS-lab/pintos:/home/pintos
+    #  - /home/sam/OSWF/lab02/lab02/pintos-main_done:/home/pintos
     environment:
       - PINTOS_DIR=/home/pintos

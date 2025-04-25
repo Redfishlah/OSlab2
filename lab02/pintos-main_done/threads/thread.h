@@ -142,6 +142,11 @@ struct thread
     struct list_elem donors_elem;
     int original_priority;
 
+    /////////////0426/////////
+    int nice;                           /* Niceness of thread used in mlfqs */
+    int64_t recent_cpu;                 /* Used in mlfqs */
+    //////////////////////////
+
   };
 
 /* If false (default), use round-robin scheduler.
@@ -189,4 +194,32 @@ void donate_priority (void);
 void priority_check (void);
 bool priority_compare(const struct list_elem *a, const struct list_elem *b, void *aux);
 bool thread_priority_cmp(const struct list_elem *a, const struct list_elem *b, void *aux);
+
+
+///////////////////0426////////////////////
+// #ifndef THREAD_H
+// #define THREAD_H
+
+#include <stdint.h>
+
+/* to let other api use load_avg if needed*/
+extern int64_t load_avg;
+
+/* Increment by 1 for each clock tick */
+void increase_recent_cpu(void);
+
+/* Modify Priority */
+void modify_priority(struct thread *t, void *aux UNUSED);
+
+/* Modify recent_cpu */
+void modify_cpu(struct thread *t, void *aux UNUSED);
+
+/* Modify load average */
+void modify_load_avg(void);
+
+//////////////////////////////////////////////////
+
+
 #endif /* threads/thread.h */
+
+

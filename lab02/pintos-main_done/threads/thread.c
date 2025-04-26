@@ -281,10 +281,10 @@ thread_create (const char *name, int priority,
 }
 
 /* Puts the current thread to sleep.  It will not be scheduled
-   again until awoken by thread_unblock().
+  again until awoken by thread_unblock().
 
-   This function must be called with interrupts turned off.  It
-   is usually a better idea to use one of the synchronization
+  This function must be called with interrupts turned off.  It
+  is usually a better idea to use one of the synchronization
    primitives in synch.h. */
 void
 thread_block (void) 
@@ -297,12 +297,12 @@ thread_block (void)
 }
 
 /* Transitions a blocked thread T to the ready-to-run state.
-   This is an error if T is not blocked.  (Use thread_yield() to
-   make the running thread ready.)
+  This is an error if T is not blocked.  (Use thread_yield() to
+  make the running thread ready.)
 
-   This function does not preempt the running thread.  This can
-   be important: if the caller had disabled interrupts itself,
-   it may expect that it can atomically unblock a thread and
+  This function does not preempt the running thread.  This can
+  be important: if the caller had disabled interrupts itself,
+  it may expect that it can atomically unblock a thread and
    update other data. */
 void
 thread_unblock (struct thread *t) 
@@ -326,7 +326,7 @@ thread_name (void)
 }
 
 /* Returns the running thread.
-   This is running_thread() plus a couple of sanity checks.
+  This is running_thread() plus a couple of sanity checks.
    See the big comment at the top of thread.h for details. */
 struct thread *
 thread_current (void) 
@@ -334,9 +334,9 @@ thread_current (void)
   struct thread *t = running_thread ();
   
   /* Make sure T is really a thread.
-     If either of these assertions fire, then your thread may
-     have overflowed its stack.  Each thread has less than 4 kB
-     of stack, so a few big automatic arrays or moderate
+    If either of these assertions fire, then your thread may
+    have overflowed its stack.  Each thread has less than 4 kB
+    of stack, so a few big automatic arrays or moderate
      recursion can cause stack overflow. */
   ASSERT (is_thread (t));
   ASSERT (t->status == THREAD_RUNNING);
@@ -363,7 +363,7 @@ thread_exit (void)
 #endif
 
   /* Remove thread from all threads list, set our status to dying,
-     and schedule another process.  That process will destroy us
+    and schedule another process.  That process will destroy us
      when it calls thread_schedule_tail(). */
   intr_disable ();
 
@@ -445,7 +445,7 @@ void thread_set_priority(int new_pri) {
   cur->original_priority = new_pri;
   cur->priority = new_pri;
 
-  // 如果曾經被 donate，維持最高的 priority
+  // If has been donated, keep the highest priority
   if (!list_empty(&cur->donors_list)) {
     struct thread *top_donor = list_entry(list_front(&cur->donors_list),
                                           struct thread, donors_elem);
@@ -475,40 +475,42 @@ thread_get_priority(void) {
 void
 thread_set_nice (int nice UNUSED) 
 {
-  /* Not yet implemented. */ /////////////////0426/////////////////
+  /////////////////0426 /////////////////
   thread_current()->nice = nice;
   modify_priority(thread_current(),NULL);
   thread_yield();
+  ///////////////////////////////////////
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) 
 {
-  /* Not yet implemented. *////////////////0426
+  /////////////////0426 /////////////////
   return thread_current()->nice;
-  // return 0;
+  ///////////////////////////////////////
 }
 
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void) 
 {
-  /* Not yet implemented. */ //////////////0426
+  /////////////////0426 /////////////////
   int temp = MULTIPLY_X_BY_N(load_avg,100);
   return CONVERT_X_TO_INTEGER_NEAREST(temp);
-  // return 0;
+  ///////////////////////////////////////
 }
 
-/* Returns 100 times the current thread's recent_cpu value. */ ///////////0426
+/* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void) 
 {
-  /* Not yet implemented. */
+  /////////////////0426 /////////////////
   return CONVERT_X_TO_INTEGER_NEAREST(MULTIPLY_X_BY_N(thread_current()->recent_cpu,100));
-  // return 0;
+  ///////////////////////////////////////
 }
-
+
+
 /* Idle thread.  Executes when no other thread is ready to run.
 
    The idle thread is initially put on the ready list by
@@ -557,7 +559,7 @@ kernel_thread (thread_func *function, void *aux)
   function (aux);       /* Execute the thread function. */
   thread_exit ();       /* If function() returns, kill the thread. */
 }
-
+
 /* Returns the running thread. */
 struct thread *
 running_thread (void) 
@@ -737,7 +739,7 @@ allocate_tid (void)
 
   return tid;
 }
-
+
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
@@ -749,13 +751,13 @@ uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 /* define laod_avg*/
 int64_t load_avg = 0;
 
-/* Increment by 1 for each clock tick */
+/* Each clock tick, increase 1 */
 void increase_recent_cpu(void){
   if (thread_current()!=idle_thread)
     thread_current()->recent_cpu = ADD_X_AND_N(thread_current()->recent_cpu,1);
 }
 
-/* Modify Priority */
+/* To modify priority */
 void modify_priority(struct thread *t,void *aux UNUSED){
   if (t!=idle_thread){
     //priority = PRI_MAX - (recent_cpu / 4) - (nice * 2)
@@ -768,7 +770,7 @@ void modify_priority(struct thread *t,void *aux UNUSED){
   }
 }
 
-/* Modify recent_cpu */
+/* To modify recent_cpu */
 void modify_cpu(struct thread *t,void *aux UNUSED){
   if (t != idle_thread){
   int64_t fa = MULTIPLY_X_BY_N(load_avg,2);
@@ -778,7 +780,7 @@ void modify_cpu(struct thread *t,void *aux UNUSED){
   }
 }
 
-/* Modify load average */
+/* To modify load_average */
 void modify_load_avg(void){
   int ready_threads = list_size(&ready_list);
   if (thread_current()!=idle_thread){
@@ -789,5 +791,6 @@ void modify_load_avg(void){
   int add2 = DIVIDE_X_BY_N(CONVERT_N_TO_FIXED_POINT(ready_threads),60);
   load_avg = ADD_X_AND_Y(add1,add2);
 }
+
 /////////////////////////////////////////////////////////
 

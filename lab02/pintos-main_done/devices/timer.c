@@ -109,7 +109,7 @@ timer_sleep (int64_t ticks) {
     list_insert_ordered(&sleeping_list, &cur->elem, wake_compare, NULL);
 
     thread_block(); // 把自己 block 掉
-    intr_set_level(old_level); // 開中斷
+    intr_set_level(old_level); 
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -181,7 +181,8 @@ timer_print_stats (void)
 {
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
-
+
+
 /* Timer interrupt handler. */
 static void
 timer_interrupt (struct intr_frame *args UNUSED)

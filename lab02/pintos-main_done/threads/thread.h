@@ -137,14 +137,14 @@ struct thread
 
     /* Lab02: Priority test */
     struct lock *wait_on_lock;             // 正在等待的 lock
-    struct list locks;                 // 儲存所有捐贈給它的 thread
+    struct list locks;                 // 儲存所有donate給它的 thread
     struct list donors_list;
     struct list_elem donors_elem;
     int original_priority;
 
     /////////////0426/////////
-    int nice;                           /* Niceness of thread used in mlfqs */
-    int64_t recent_cpu;                 /* Used in mlfqs */
+    int nice;                           
+    int64_t recent_cpu;                 
     //////////////////////////
 
   };

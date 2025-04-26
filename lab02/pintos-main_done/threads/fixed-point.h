@@ -1,4 +1,4 @@
-// sam 0426
+// 0426
 
 #ifndef FIXED_POINT_H
 #define FIXED_POINT_H
